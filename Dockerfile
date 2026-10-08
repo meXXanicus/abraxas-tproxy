@@ -3,7 +3,7 @@ FROM golang:1.22-alpine AS builder
 RUN apk add --no-cache git
 
 # Клонируем официальный репозиторий tproxy-server (без лишних пробелов)
-RUN git clone https://github.com /app
+RUN git clone https://github.com/app
 WORKDIR /app
 
 # Компилируем бинарник для Linux
