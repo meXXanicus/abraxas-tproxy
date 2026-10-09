@@ -7,32 +7,22 @@ import (
 )
 
 func main() {
-	// 1. Скачиваем готовый официальный бинарник Telegram для Linux (без использования go install)
-	log.Println("Downloading pre-compiled tproxy-server...")
-	cmdDownload := exec.Command("curl", "-L", "-o", "tproxy-binary", "https://github.com")
-	cmdDownload.Stdout = os.Stdout
-	cmdDownload.Stderr = os.Stderr
-	if err := cmdDownload.Run(); err != nil {
-		log.Fatalf("Failed to download binary via curl: %v", err)
-	}
-
-	// 2. Делаем файл исполняемым в системе Linux
-	cmdChmod := exec.Command("chmod", "+x", "tproxy-binary")
-	if err := cmdChmod.Run(); err != nil {
-		log.Fatalf("Failed to set executable permissions: %v", err)
-	}
-
-	// 3. Считываем порты и секрет из конфигурации Render
+	// 1. Считываем порт и секретный ключ, переданные платформой Render
 	port := os.Getenv("PORT")
 	secret := os.Getenv("MTPROXY_SECRET")
 
-	// 4. Запускаем чистый прокси-сервер
-	log.Println("Starting official tproxy-server on port " + port)
-	cmdRun := exec.Command("./tproxy-binary", "--addr", "0.0.0.0:"+port, "--secret", secret)
+	log.Println("Initializing safe compile-and-run sequence for Telegram TProxy...")
+
+	// 2. Запускаем компиляцию и выполнение кода Telegram ОДНОЙ командой.
+	// Флаг @latest автоматически скачает исходники, а движок Go соберет их строго под архитектуру текущего процессора Render.
+	cmdRun := exec.Command("go", "run", "://github.com", "--addr", "0.0.0.0:"+port, "--secret", secret)
+	
+	// Перенаправляем логи компиляции и работы в консоль Render
 	cmdRun.Stdout = os.Stdout
 	cmdRun.Stderr = os.Stderr
+
+	log.Println("Compiling and launching official binary...")
 	if err := cmdRun.Run(); err != nil {
-		log.Fatalf("Server crashed: %v", err)
+		log.Fatalf("Process terminated: %v", err)
 	}
 }
-
