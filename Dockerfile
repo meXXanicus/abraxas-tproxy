@@ -1,12 +1,14 @@
-# ЭТАП 1: сборка
-FROM golang:1.22-alpine AS builder
-ENV GO111MODULE=on CGO_ENABLED=0
-RUN apk add --no-cache git
-RUN go install github.com/ВЛАДЕЛЕЦ/РЕПО/cmd/tproxy-server@latest
-
-# ЭТАП 2: запуск
-FROM alpine:latest
-RUN apk add --no-cache ca-certificates
+# Этап 1: Сборка приложения
+FROM golang:1.21-alpine AS builder
 WORKDIR /app
-COPY --from=builder /go/bin/tproxy-server .
-CMD ["sh", "-c", "./tproxy-server --addr 0.0.0.0:${PORT} --secret ${MTPROXY_SECRET}"]
+COPY go.mod ./
+COPY main.go ./
+RUN CGO_ENABLED=0 GOOS=linux go build -o proxy main.go
+
+# Этап 2: Финальный минимальный образ
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates
+WORKDIR /root/
+COPY --from=builder /app/proxy .
+EXPOSE 8080
+CMD ["./proxy"]
